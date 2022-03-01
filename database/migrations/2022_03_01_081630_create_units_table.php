@@ -16,7 +16,7 @@ class CreateUnitsTable extends Migration
         Schema::create('units', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->foreignId('module_id')->on('modules');
+            $table->foreignId('module_id')->constrained('modules');
             $table->timestamps();
         });
     }

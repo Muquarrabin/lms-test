@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateModulesTable extends Migration
+class CreatePasswordResetRequestsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,12 @@ class CreateModulesTable extends Migration
      */
     public function up()
     {
-        Schema::create('modules', function (Blueprint $table) {
+        Schema::create('password_reset_requests', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->foreignId('course_id')->constrained('courses');
+            $table->foreignId('user_id')->constrained('users');
+            $table->string('email');
+            $table->string('token');
+            $table->boolean('status');
             $table->timestamps();
         });
     }
@@ -28,6 +30,6 @@ class CreateModulesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('modules');
+        Schema::dropIfExists('password_reset_requests');
     }
 }

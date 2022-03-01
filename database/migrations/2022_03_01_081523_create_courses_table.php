@@ -17,7 +17,7 @@ class CreateCoursesTable extends Migration
             $table->id();
             $table->string('title');
             $table->longText('description');
-            $table->foreignId('category_id')->on('categories');
+            $table->foreignId('category_id')->constrained('categories');
             $table->timestamps();
         });
     }

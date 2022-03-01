@@ -17,3 +17,5 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
+include "Api/v1/authRoute.php";
