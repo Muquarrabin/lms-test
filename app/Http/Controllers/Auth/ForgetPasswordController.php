@@ -42,7 +42,7 @@ class ForgetPasswordController extends Controller
     }
     public function generatePasswordResetUrl($token, $email)
     {
-        $host = config('app.client_app_url') . $this->resetPasswordClientUrl;
+        $host = config('app.url') . $this->resetPasswordClientUrl;
         return $host . '?token=' . $token . '&email=' . $email;
     }
 

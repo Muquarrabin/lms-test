@@ -18,4 +18,4 @@ Route::get('/', function () {
 });
 
 
-include "Api/v1/authRoute.php";
+// include "Api/v1/authRoute.php";

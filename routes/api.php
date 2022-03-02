@@ -20,4 +20,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 include 'Api/v1/courseRoute.php';
 include 'Api/v1/cartRoute.php';
+include 'Api/v1/authRoute.php';
 

@@ -18,6 +18,8 @@ use App\Http\Traits\UserTrait;
 use App\Http\Traits\MessageTrait;
 use App\Jobs\AccountVerificationEmailJob;
 use App\Models\AccountVerificationRequestModel;
+use Spatie\Permission\Models\Role;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -92,7 +94,8 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
-
+            $role = Role::findByName('student');
+            $role->users()->attach($user);
             //generate token
             $token = $this->generateEmailVerificationToken(128);
 
@@ -114,7 +117,7 @@ class AuthController extends Controller
 
     public function generateAccountVerificationUrl($token, $email)
     {
-        $host = config('app.client_app_url').$this->verifyEmailClientUrl;
+        $host = config('app.url').$this->verifyEmailClientUrl;
         return $host . '?token=' . $token . '&email=' . $email;
     }
 
@@ -158,7 +161,6 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
         if ($user == null) return $this->authBasicErrorCode;
-        if ($user->is_active == $this->userDeActive) return $this->authDeactiveUserErrorCode;
         if ($user->email_verified_at == null) return $this->authUnverifiedUserErrorCode;
         $authStatus =  $this->guard()->attempt(
             $this->credentials($request),
@@ -207,6 +209,29 @@ class AuthController extends Controller
     }
 
 
+    public function checkToken(Request $request)
+    {
+        $token = $request->token;
+        $personalAccessToken =  PersonalAccessToken::findToken($token);
+
+        if ($personalAccessToken) {
+            return new JsonResponse(['Token is Valid'], 200);
+
+        } else {
+            return new JsonResponse('Token is Invalid', 401);
+        }
+    }
+
+    protected function verifyBeforeLogin(Request $request, User $user) {
+
+        if ($user->email_verified_at == null) return $this->authUnverifiedUserErrorCode;
+
+        if (Hash::check($request->password, $user->password)) {
+            return $this->authSuccessCode;
+        }
+        return $this->authBasicErrorCode;
+    }
+
     public function login(Request $request)
     {
         $this->validateLogin($request);
@@ -223,9 +248,18 @@ class AuthController extends Controller
             return $this->sendLockoutResponse($request);
         }
 
-        if ($authCode = $this->attemptLogin($request)) {
+        $user = User::where($this->username(), $request->email)->first();
 
-            if ($authCode == $this->authUnverifiedUserErrorCode) return $this->sendUnVerifiedLoginResponse($request);
+        if ($user == null) {
+            $this->incrementLoginAttempts($request);
+            return $this->sendFailedLoginResponse($request);
+        }
+
+        if ($authCode = $this->verifyBeforeLogin($request, $user)) {
+
+
+            // if ($authCode == $this->authUnverifiedUserErrorCode) return $this->sendUnVerifiedLoginResponse($request);
+            // if ($authCode == $this->nonAllowedUserErrorCode) return $this->sendFailedLoginResponse($request);
             if ($authCode == $this->authBasicErrorCode) {
                 // If the login attempt was unsuccessful we will increment the number of attempts
                 // to login and redirect the user back to the login form. Of course, when this
@@ -233,7 +267,19 @@ class AuthController extends Controller
                 $this->incrementLoginAttempts($request);
                 return $this->sendFailedLoginResponse($request);
             }
-            if ($authCode == $this->authSuccessCode) return $this->sendLoginResponse($request);
+            if ($authCode == $this->authSuccessCode) {
+                $this->clearLoginAttempts($request);
+                //revoking all token
+                //$user->tokens()->delete();
+                //logging in
+                $token = $user->createToken($request->device . $user->id)->plainTextToken;
+
+                return [
+                    'user'  => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer'
+                ];
+            }
         }
 
         $this->incrementLoginAttempts($request);
@@ -255,13 +301,9 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $this->guard()->logout();
+        $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
 
-        $request->session()->regenerateToken();
-
-    
         return new JsonResponse([], 204);
     }
 
