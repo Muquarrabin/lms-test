@@ -20,7 +20,7 @@ class CartController extends Controller
 
     public function addToCart(Request $request)
     {
-        $cart=Cart::add([
+        $cart = Cart::add([
             'id' => $request->id,
             'name' => $request->name,
             'price' => $request->price,
@@ -28,23 +28,29 @@ class CartController extends Controller
             'weight' => 0,
         ]);
 
-        return new JsonResponse('Product is Added to Cart Successfully !', Response::HTTP_OK);
+        return new JsonResponse([
+            'message' => 'Product is Added to Cart Successfully !',
+            'success' => true
+        ], Response::HTTP_OK);
     }
 
     public function updateCart(Request $request)
     {
         Cart::update($request->row_id, $request->quantity);
 
-        return new JsonResponse('Course is Updated to Cart Successfully !', Response::HTTP_OK);
-
+        return new JsonResponse([
+            'message' => 'Course is Updated to Cart Successfully !',
+            'success' => true
+        ], Response::HTTP_OK);
     }
 
     public function removeCart(Request $request)
     {
         Cart::remove($request->row_id);
 
-        return new JsonResponse('Course Cart Remove Successfully !', Response::HTTP_OK);
+        return new JsonResponse([
+            'message' => 'Course Cart Remove Successfully !',
+            'success' => true
+        ], Response::HTTP_OK);
     }
-
-
 }

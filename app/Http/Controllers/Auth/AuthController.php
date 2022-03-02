@@ -108,16 +108,21 @@ class AuthController extends Controller
 
 
             DB::commit();
-            return  new JsonResponse($user, 201);
+
+            return  new JsonResponse([
+                'user_info' => $user,
+                'message' => 'Your account has been created. Please verify your email to log in.',
+                'success' => true
+            ], 201);
         } catch (\Exception $exception) {
             DB::rollBack();
-            return new JsonResponse(['errors' => $exception->getMessage()], 500);
+            return new JsonResponse(['errors' => $exception->getMessage(), 'success' => false], 500);
         }
     }
 
     public function generateAccountVerificationUrl($token, $email)
     {
-        $host = config('app.url').$this->verifyEmailClientUrl;
+        $host = config('app.url') . $this->verifyEmailClientUrl;
         return $host . '?token=' . $token . '&email=' . $email;
     }
 
@@ -215,14 +220,14 @@ class AuthController extends Controller
         $personalAccessToken =  PersonalAccessToken::findToken($token);
 
         if ($personalAccessToken) {
-            return new JsonResponse(['Token is Valid'], 200);
-
+            return new JsonResponse(['message' => 'Token is Valid', 'success' => true], 200);
         } else {
-            return new JsonResponse('Token is Invalid', 401);
+            return new JsonResponse(['message' => 'Token is Invalid', 'success' => false], 401);
         }
     }
 
-    protected function verifyBeforeLogin(Request $request, User $user) {
+    protected function verifyBeforeLogin(Request $request, User $user)
+    {
 
         if ($user->email_verified_at == null) return $this->authUnverifiedUserErrorCode;
 
@@ -258,7 +263,7 @@ class AuthController extends Controller
         if ($authCode = $this->verifyBeforeLogin($request, $user)) {
 
 
-            // if ($authCode == $this->authUnverifiedUserErrorCode) return $this->sendUnVerifiedLoginResponse($request);
+            if ($authCode == $this->authUnverifiedUserErrorCode) return $this->sendUnVerifiedLoginResponse($request);
             // if ($authCode == $this->nonAllowedUserErrorCode) return $this->sendFailedLoginResponse($request);
             if ($authCode == $this->authBasicErrorCode) {
                 // If the login attempt was unsuccessful we will increment the number of attempts
